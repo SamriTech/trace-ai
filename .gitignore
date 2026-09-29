@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.env
+
+# Data & Storage
+data/qdrant_storage/
+data/crops/*
+!data/crops/.gitkeep
+videos/*
+!videos/.gitkeep
+
+# Node
+node_modules/
+.next/
+out/
