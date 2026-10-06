@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #0B132B;
+  --panel-secondary: #111C44;
+  --surface-darkest: #070D1D;
+  --surface-card: #14214D;
+  --border-tactical: #1E2E62;
+  --border-subtle: #16244E;
+  --text-primary: #E5E7EB;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --tactical-gold: #D4AF37;
+  --tactical-gold-glow: rgba(212, 175, 55, 0.4);
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --info: #06B6D4;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  overflow-x: hidden;
+}
+
+/* Tactical Dark Leaflet Tiles */
+.tactical-map-tiles {
+  filter: invert(100%) hue-rotate(185deg) brightness(88%) contrast(96%) saturate(140%);
+}
+
+/* Custom Tactical Scrollbars */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #070D1D;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #1E2E62;
+  border-radius: 2px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #D4AF37;
+}
+
+/* Tactical Crosshairs & Reticles */
+.reticle-corner-tl {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid #D4AF37;
+  border-left: 2px solid #D4AF37;
+}
+
+.reticle-corner-tr {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid #D4AF37;
+  border-right: 2px solid #D4AF37;
+}
+
+.reticle-corner-bl {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  border-bottom: 2px solid #D4AF37;
+  border-left: 2px solid #D4AF37;
+}
+
+.reticle-corner-br {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  border-bottom: 2px solid #D4AF37;
+  border-right: 2px solid #D4AF37;
+}
+
+/* Radar Scan Line Animation */
+@keyframes radar-sweep {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(200%);
+    opacity: 0;
+  }
+}
+
+.animate-radar-sweep {
+  animation: radar-sweep 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Tactical Map Leaflet Overrides */
+.leaflet-popup-content-wrapper {
+  background: #070D1D !important;
+  color: #E5E7EB !important;
+  border: 1px solid #1E2E62 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7), 0 0 15px rgba(212, 175, 55, 0.15) !important;
+}
+
+.leaflet-popup-tip {
+  background: #070D1D !important;
+  border: 1px solid #1E2E62 !important;
+}
+
+.leaflet-control-zoom {
+  border: 1px solid #1E2E62 !important;
+  border-radius: 6px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+}
+
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+  background-color: #070D1D !important;
+  color: #E5E7EB !important;
+  border-bottom: 1px solid #1E2E62 !important;
+}
+
+.leaflet-control-zoom-in:hover,
+.leaflet-control-zoom-out:hover {
+  background-color: #111C44 !important;
+  color: #D4AF37 !important;
+}
