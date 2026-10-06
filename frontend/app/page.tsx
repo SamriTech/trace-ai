@@ -17,6 +17,7 @@ import {
   MatchCandidate,
   Sighting,
   TargetPerson,
+  Camera,
 } from "../lib/types";
 import {
   DEFAULT_INVESTIGATION_CASE,
@@ -30,6 +31,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<NavTab>("overview");
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [backendOnline, setBackendOnline] = useState<boolean>(true);
+  const [cameras, setCameras] = useState<Camera[]>(ADDIS_ABABA_CAMERAS);
 
   // Target Person State
   const [targetPerson, setTargetPerson] = useState<TargetPerson | null>({
@@ -225,7 +227,7 @@ export default function Dashboard() {
                   onComplete={handleWizardComplete}
                   onCancel={() => setActiveTab("overview")}
                   onBeginAnalysis={() => setIsAnalyzing(true)}
-                  cameras={ADDIS_ABABA_CAMERAS}
+                  cameras={cameras}
                 />
               )}
 
@@ -245,7 +247,7 @@ export default function Dashboard() {
                   possibleCandidates={candidates}
                   selectedSightingId={selectedSightingId}
                   onSelectSighting={(id) => setSelectedSightingId(id)}
-                  cameras={ADDIS_ABABA_CAMERAS}
+                  cameras={cameras}
                 />
               )}
 
@@ -257,7 +259,20 @@ export default function Dashboard() {
                 />
               )}
 
-              {activeTab === "cctv_sources" && <CCTVSourcesView />}
+              {activeTab === "cctv_sources" && (
+                <CCTVSourcesView
+                  cameras={cameras}
+                  onAddCamera={(newCam) => setCameras((prev) => [...prev, newCam])}
+                  onUpdateCamera={(updatedCam) =>
+                    setCameras((prev) =>
+                      prev.map((c) => (c.id === updatedCam.id ? updatedCam : c))
+                    )
+                  }
+                  onDeleteCamera={(camId) =>
+                    setCameras((prev) => prev.filter((c) => c.id !== camId))
+                  }
+                />
+              )}
 
               {activeTab === "live_cctv" && (
                 <LiveCCTVView
@@ -265,13 +280,13 @@ export default function Dashboard() {
                 />
               )}
 
-              {["alerts", "evidence", "settings"].includes(activeTab) && (
+              {activeTab === "settings" && (
                 <div className="flex-1 bg-[#F4F6FA] p-8 flex flex-col items-center justify-center text-center font-mono">
                   <span className="text-sm font-bold text-[#0F172A] uppercase tracking-wider">
-                    {activeTab.toUpperCase()} MODULE
+                    SETTINGS MODULE
                   </span>
                   <p className="text-xs text-[#64748B] mt-1 max-w-md">
-                    Module active under Ethiopian Federal Police Case #{activeCaseId}.
+                    System configuration and parameters active under Ethiopian Federal Police Case #{activeCaseId}.
                   </p>
                 </div>
               )}

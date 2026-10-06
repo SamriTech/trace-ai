@@ -60,4 +60,8 @@ declare module "lucide-react" {
   export const ZoomIn: LucideIcon;
   export const SkipBack: LucideIcon;
   export const SkipForward: LucideIcon;
+  export const Edit2: LucideIcon;
+  export const Trash2: LucideIcon;
+  export const Edit: LucideIcon;
+  export const Trash: LucideIcon;
 }

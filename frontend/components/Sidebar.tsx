@@ -10,8 +10,6 @@ import {
   Clock,
   Map,
   Radio,
-  Bell,
-  FileText,
   Settings,
   Shield,
   Activity,
@@ -26,8 +24,6 @@ export type NavTab =
   | "timeline"
   | "investigation_map"
   | "live_cctv"
-  | "alerts"
-  | "evidence"
   | "settings";
 
 interface SidebarProps {
@@ -51,8 +47,6 @@ export default function Sidebar({
     { id: "timeline" as NavTab, label: "Timeline", icon: Clock },
     { id: "investigation_map" as NavTab, label: "Investigation Map", icon: Map },
     { id: "live_cctv" as NavTab, label: "Live CCTV", icon: Radio },
-    { id: "alerts" as NavTab, label: "Alerts", icon: Bell },
-    { id: "evidence" as NavTab, label: "Evidence", icon: FileText },
     { id: "settings" as NavTab, label: "Settings", icon: Settings },
   ];
 
