@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+ultralytics
+torch
+torchvision
+torchreid
+qdrant-client
+opencv-python-headless
+numpy
+pydantic
+python-multipart
+geopy
+scipy
+gdown
+tensorboard
