@@ -131,4 +131,15 @@ class VideoReIDPipeline:
                 'timestamp': best_timestamp
             })
             
-        return processed_tracklets
+        return {
+            'tracklets': processed_tracklets,
+            'total_frames': frame_count,
+            'total_tracks': len(tracklets_data)
+        }
+
+    def extract_single_image(self, image: np.ndarray) -> list[float]:
+        """Extract a normalized 512-dim Re-ID feature vector from a probe image."""
+        features = self.extractor([image])
+        feature_vector = torch.nn.functional.normalize(features[0], p=2, dim=0).cpu().numpy().tolist()
+        return feature_vector
+

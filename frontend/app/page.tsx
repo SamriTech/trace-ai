@@ -22,10 +22,9 @@ import {
 import {
   DEFAULT_INVESTIGATION_CASE,
   ADDIS_ABABA_CAMERAS,
-  INITIAL_MATCH_CANDIDATES,
   INITIAL_CONFIRMED_SIGHTINGS,
 } from "../lib/mockData";
-import { checkBackendHealth, searchPerson } from "../lib/api";
+import { checkBackendHealth, searchPerson, getDemoForensicCandidates } from "../lib/api";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<NavTab>("overview");
@@ -45,12 +44,13 @@ export default function Dashboard() {
   // Current Case ID State
   const [activeCaseId, setActiveCaseId] = useState<string>("MP-2048");
 
-  // Investigation Candidates & Sightings
-  const [candidates, setCandidates] = useState<MatchCandidate[]>(INITIAL_MATCH_CANDIDATES);
-  const [confirmedSightings, setConfirmedSightings] = useState<Sighting[]>(INITIAL_CONFIRMED_SIGHTINGS);
+  // Investigation Candidates & Sightings (Real backend Qdrant results)
+  const [candidates, setCandidates] = useState<MatchCandidate[]>([]);
+  const [confirmedSightings, setConfirmedSightings] = useState<Sighting[]>([]);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   // Selected sighting / modal states
-  const [selectedSightingId, setSelectedSightingId] = useState<string | null>("sight-002");
+  const [selectedSightingId, setSelectedSightingId] = useState<string | null>(null);
   const [reviewingCandidate, setReviewingCandidate] = useState<MatchCandidate | null>(null);
 
   // Check backend health on mount
@@ -63,7 +63,7 @@ export default function Dashboard() {
   // Handle Target Photo Upload from Overview
   const handleUpdateTargetPhoto = async (file: File) => {
     const photoUrl = URL.createObjectURL(file);
-    setTargetPerson((prev) => ({
+    setTargetPerson((prev: TargetPerson | null) => ({
       id: prev?.id || activeCaseId,
       name: prev?.name || "Unknown Subject",
       lastSeenLocation: prev?.lastSeenLocation || "Bole, Addis Ababa",
@@ -71,6 +71,7 @@ export default function Dashboard() {
       photoUrl,
       file,
     }));
+    setSearchError(null);
 
     try {
       const { candidates: newCandidates, isLiveBackend } = await searchPerson({
@@ -81,12 +82,15 @@ export default function Dashboard() {
       });
       setCandidates(newCandidates);
       setBackendOnline(isLiveBackend);
-    } catch (err) {
-      console.warn("Backend Re-ID query completed with mock fallback", err);
+      setSearchError(null);
+    } catch (err: any) {
+      console.error("Backend search failed:", err);
+      setSearchError(err.message || "Failed to search surveillance grid for subject.");
+      setCandidates([]);
     }
   };
 
-  // Complete Wizard & Launch Analysis
+  // Complete Wizard & Launch Real Analysis
   const handleWizardComplete = async (data: {
     caseName: string;
     caseId: string;
@@ -97,17 +101,48 @@ export default function Dashboard() {
     videoFiles: File[];
   }) => {
     const photoUrl = data.file ? URL.createObjectURL(data.file) : null;
-    setActiveCaseId(data.caseId || "MP-2048");
+    const cid = data.caseId || "MP-2048";
+    setActiveCaseId(cid);
     setTargetPerson({
-      id: data.caseId || "MP-2048",
+      id: cid,
       name: data.caseName || "Subject",
       lastSeenLocation: data.lastKnownLocation || "Bole, Addis Ababa",
       lastSeenTime: data.lastKnownTime || "10:42",
       photoUrl,
       file: data.file,
     });
+    setConfirmedSightings([]);
+    setSearchError(null);
 
-    setIsAnalyzing(true);
+    if (data.file) {
+      try {
+        const { candidates: newCandidates, isLiveBackend } = await searchPerson({
+          file: data.file,
+          ref_lat: 9.0021,
+          ref_lon: 38.7758,
+          ref_timestamp: new Date().toISOString(),
+        });
+        setCandidates(newCandidates);
+        setBackendOnline(isLiveBackend);
+        setSearchError(null);
+      } catch (err: any) {
+        console.error("Backend search failed:", err);
+        setSearchError(err.message || "Failed to search surveillance grid for subject.");
+        setCandidates([]);
+      }
+    } else {
+      setCandidates([]);
+    }
+
+    setIsAnalyzing(false);
+    setActiveTab("possible_sightings");
+  };
+
+  // Demo helper to load simulation dataset
+  const handleLoadDemoData = () => {
+    const demoCandidates = getDemoForensicCandidates();
+    setCandidates(demoCandidates);
+    setSearchError(null);
   };
 
   // Confirm Candidate Match
@@ -226,7 +261,6 @@ export default function Dashboard() {
                 <NewInvestigationWizard
                   onComplete={handleWizardComplete}
                   onCancel={() => setActiveTab("overview")}
-                  onBeginAnalysis={() => setIsAnalyzing(true)}
                   cameras={cameras}
                 />
               )}
@@ -235,9 +269,11 @@ export default function Dashboard() {
                 <PossibleSightingsStudioView
                   candidates={candidates}
                   caseId={activeCaseId}
+                  searchError={searchError}
                   onConfirmSighting={handleConfirmMatch}
                   onMarkUncertain={handleMarkUncertain}
                   onRejectSighting={handleDismissMatch}
+                  onLoadDemoData={handleLoadDemoData}
                 />
               )}
 

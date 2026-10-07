@@ -14,6 +14,7 @@ import {
   Upload,
   Eye,
   Check,
+  Search,
 } from "lucide-react";
 
 interface OverviewViewProps {
@@ -47,6 +48,11 @@ export default function OverviewView({
       onUpdateTargetPhoto(e.target.files[0]);
     }
   };
+
+  const totalSightings = candidates.length;
+  const unreviewedCount = candidates.filter((c) => c.review_status === "UNREVIEWED").length;
+  const uniqueCamerasCount = new Set(candidates.map((c) => c.camera_id)).size;
+  const highConfidenceCount = candidates.filter((c) => c.confidence_score >= 0.85).length;
 
   return (
     <div className="flex-1 bg-[#F4F6FA] p-6 overflow-y-auto custom-scrollbar flex flex-col gap-6">
@@ -110,7 +116,7 @@ export default function OverviewView({
               <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-xs font-mono pt-1">
                 <div>
                   <span className="text-[10px] text-[#64748B] block">Case ID</span>
-                  <strong className="text-[#0F172A] font-bold text-sm">MP-2048</strong>
+                  <strong className="text-[#0F172A] font-bold text-sm">{targetPerson?.id || "MP-2048"}</strong>
                 </div>
 
                 <div>
@@ -123,12 +129,12 @@ export default function OverviewView({
 
                 <div>
                   <span className="text-[10px] text-[#64748B] block">Last Known Location</span>
-                  <span className="text-[#0F172A] font-medium">Bole, Addis Ababa</span>
+                  <span className="text-[#0F172A] font-medium">{targetPerson?.lastSeenLocation || "Bole, Addis Ababa"}</span>
                 </div>
 
                 <div>
                   <span className="text-[10px] text-[#64748B] block">Last Known Time</span>
-                  <span className="text-[#0F172A] font-medium">10:42</span>
+                  <span className="text-[#0F172A] font-medium">{targetPerson?.lastSeenTime || "10:42"}</span>
                 </div>
 
                 <div>
@@ -142,8 +148,8 @@ export default function OverviewView({
                 </div>
 
                 <div className="col-span-2 pt-2 border-t border-[#F1F5F9]">
-                  <span className="text-[10px] text-[#64748B] block">CCTV Footage Analyzed</span>
-                  <span className="text-[#0F172A] font-medium">6 sources (11h 42m total)</span>
+                  <span className="text-[10px] text-[#64748B] block">Indexed Surveillance Hits</span>
+                  <span className="text-[#0F172A] font-medium">{totalSightings} candidates ({uniqueCamerasCount} camera nodes)</span>
                 </div>
               </div>
 
@@ -165,33 +171,33 @@ export default function OverviewView({
                 POSSIBLE SIGHTINGS
               </span>
               <div className="mt-2">
-                <span className="text-2xl font-bold font-mono text-[#0F172A] leading-none">18</span>
+                <span className="text-2xl font-bold font-mono text-[#0F172A] leading-none">{totalSightings}</span>
                 <span className="text-[10px] font-mono text-[#64748B] block mt-1">
-                  4 require review
+                  {unreviewedCount} require review
                 </span>
               </div>
             </div>
 
             <div className="bg-white p-3.5 rounded-lg border border-[#E2E8F0] shadow-xs flex flex-col justify-between">
               <span className="text-[9px] font-mono font-bold text-[#64748B] uppercase tracking-wider">
-                CAMERAS ANALYZED
+                CAMERAS MATCHED
               </span>
               <div className="mt-2">
-                <span className="text-2xl font-bold font-mono text-[#0F172A] leading-none">6</span>
+                <span className="text-2xl font-bold font-mono text-[#0F172A] leading-none">{uniqueCamerasCount}</span>
                 <span className="text-[10px] font-mono text-[#64748B] block mt-1">
-                  2 processing
+                  with positive hits
                 </span>
               </div>
             </div>
 
             <div className="bg-white p-3.5 rounded-lg border border-[#E2E8F0] shadow-xs flex flex-col justify-between">
               <span className="text-[9px] font-mono font-bold text-[#64748B] uppercase tracking-wider">
-                TRACKS IDENTIFIED
+                UNREVIEWED
               </span>
               <div className="mt-2">
-                <span className="text-2xl font-bold font-mono text-[#0F172A] leading-none">426</span>
+                <span className="text-2xl font-bold font-mono text-[#0F172A] leading-none">{unreviewedCount}</span>
                 <span className="text-[10px] font-mono text-[#64748B] block mt-1">
-                  across all footage
+                  pending decision
                 </span>
               </div>
             </div>
@@ -201,7 +207,7 @@ export default function OverviewView({
                 CONFIDENCE HIGH
               </span>
               <div className="mt-2">
-                <span className="text-2xl font-bold font-mono text-[#0F172A] leading-none">3</span>
+                <span className="text-2xl font-bold font-mono text-[#0F172A] leading-none">{highConfidenceCount}</span>
                 <span className="text-[10px] font-mono text-[#64748B] block mt-1">
                   ≥85% similarity
                 </span>
@@ -217,7 +223,7 @@ export default function OverviewView({
           {/* Header Bar: Title + Filter Tabs */}
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-mono font-bold text-[#475569] tracking-wider uppercase">
-              POSSIBLE SIGHTINGS
+              POSSIBLE SIGHTINGS ({filteredCandidates.length})
             </span>
 
             {/* Filter Buttons */}
@@ -255,112 +261,129 @@ export default function OverviewView({
             </div>
           </div>
 
-          {/* Sighting Cards List */}
-          <div className="flex flex-col gap-3">
-            {filteredCandidates.map((cand, idx) => {
-              const similarityScore = Math.round(cand.confidence_score * 100);
-              const isUncertain = cand.feasibility_badge === "Unfeasible" || cand.confidence_score < 0.75;
-              const isReviewed = cand.review_status === "CONFIRMED";
+          {/* Sighting Cards List or Empty State */}
+          {filteredCandidates.length === 0 ? (
+            <div className="bg-white rounded-lg border border-[#E2E8F0] p-10 flex flex-col items-center justify-center text-center shadow-xs gap-3">
+              <div className="w-12 h-12 rounded-full bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-center text-[#94A3B8]">
+                <Search className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-xs font-mono font-bold text-[#0F172A] uppercase tracking-wider">
+                  NO MATCHING SIGHTINGS FOUND
+                </h4>
+                <p className="text-[11px] font-mono text-[#64748B] mt-1 max-w-sm">
+                  {candidates.length === 0
+                    ? "No candidate tracklets have matched the reference subject in the surveillance grid."
+                    : "No sightings match the currently active filter selection."}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {filteredCandidates.map((cand, idx) => {
+                const similarityScore = Math.round(cand.confidence_score * 100);
+                const isUncertain = cand.feasibility_badge === "Unfeasible" || cand.confidence_score < 0.75;
+                const isReviewed = cand.review_status === "CONFIRMED";
 
-              return (
-                <div
-                  key={cand.tracklet_id || idx}
-                  className="bg-white rounded-lg border border-[#E2E8F0] p-4 flex items-center justify-between gap-4 shadow-xs hover:border-[#CBD5E1] transition-all"
-                >
-                  {/* Left Side: Thumbnail Preview */}
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="relative w-24 h-20 bg-[#071026] rounded border border-[#152347] flex flex-col items-center justify-center overflow-hidden shrink-0">
-                      {cand.crop_url ? (
-                        <img
-                          src={cand.crop_url}
-                          alt="CCTV Crop"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center p-1 text-center">
-                          {/* Yellow Bounding Frame Silhouette Indicator */}
-                          <div className="w-8 h-10 border border-[#D4AF37] bg-[#D4AF37]/10 rounded-xs flex items-center justify-center">
-                            <User className="w-5 h-5 text-[#D4AF37]" />
-                          </div>
-                        </div>
-                      )}
-                      <div className="absolute top-1 left-1.5 px-1 py-0.2 bg-black/80 rounded text-[8px] font-mono text-[#D4AF37] font-bold">
-                        {cand.camera_id}
-                      </div>
-                    </div>
-
-                    {/* Middle Details */}
-                    <div className="flex-1 flex flex-col justify-between h-20 py-0.5">
-                      {/* Line 1: Camera ID, Track #, Status Badge */}
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-sm text-[#0F172A]">
-                          {cand.camera_id}
-                        </span>
-                        <span className="text-[10px] font-mono text-[#64748B]">
-                          Track #{cand.original_track_id || (164 + idx * 30)}
-                        </span>
-                        {isReviewed ? (
-                          <span className="flex items-center gap-1 text-[9px] font-mono font-bold text-[#16A34A] bg-[#DCFCE7] px-2 py-0.5 rounded border border-[#86EFAC]">
-                            <Check className="w-2.5 h-2.5" />
-                            REVIEWED
-                          </span>
-                        ) : isUncertain ? (
-                          <span className="text-[9px] font-mono font-bold text-[#0284C7] bg-[#E0F2FE] px-2 py-0.5 rounded border border-[#BAE6FD]">
-                            ● UNCERTAIN
-                          </span>
-                        ) : (
-                          <span className="text-[9px] font-mono font-bold text-[#D97706] bg-[#FEF3C7] px-2 py-0.5 rounded border border-[#FDE68A]">
-                            ● UNREVIEWED
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Line 2: Location Name */}
-                      <span className="text-xs text-[#475569] font-medium line-clamp-1">
-                        {cand.location_name || "Bole Road — East Entrance"}
-                      </span>
-
-                      {/* Line 3: Timestamp */}
-                      <span className="text-[10px] font-mono text-[#64748B]">
-                        {new Date(cand.timestamp).toLocaleDateString("en-GB", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}{" "}
-                        · {new Date(cand.timestamp).toLocaleTimeString("en-GB")}
-                      </span>
-
-                      {/* Line 4: Similarity Meter Bar */}
-                      <div className="flex items-center gap-3 mt-1">
-                        <span className="text-[9px] font-mono font-bold text-[#64748B] tracking-wider uppercase">
-                          SIMILARITY
-                        </span>
-                        <div className="flex-1 h-1 bg-[#E2E8F0] rounded-full overflow-hidden max-w-70">
-                          <div
-                            className="h-full bg-[#D4AF37] rounded-full"
-                            style={{ width: `${similarityScore}%` }}
+                return (
+                  <div
+                    key={cand.tracklet_id || idx}
+                    className="bg-white rounded-lg border border-[#E2E8F0] p-4 flex items-center justify-between gap-4 shadow-xs hover:border-[#CBD5E1] transition-all"
+                  >
+                    {/* Left Side: Thumbnail Preview */}
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="relative w-24 h-20 bg-[#071026] rounded border border-[#152347] flex flex-col items-center justify-center overflow-hidden shrink-0">
+                        {cand.crop_url ? (
+                          <img
+                            src={cand.crop_url}
+                            alt="CCTV Crop"
+                            className="w-full h-full object-cover"
                           />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center p-1 text-center">
+                            <div className="w-8 h-10 border border-[#D4AF37] bg-[#D4AF37]/10 rounded-xs flex items-center justify-center">
+                              <User className="w-5 h-5 text-[#D4AF37]" />
+                            </div>
+                          </div>
+                        )}
+                        <div className="absolute top-1 left-1.5 px-1 py-0.2 bg-black/80 rounded text-[8px] font-mono text-[#D4AF37] font-bold">
+                          {cand.camera_id}
                         </div>
-                        <span className="text-xs font-mono font-bold text-[#64748B]">
-                          {similarityScore}%
+                      </div>
+
+                      {/* Middle Details */}
+                      <div className="flex-1 flex flex-col justify-between h-20 py-0.5">
+                        {/* Line 1: Camera ID, Track #, Status Badge */}
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-sm text-[#0F172A]">
+                            {cand.camera_id}
+                          </span>
+                          <span className="text-[10px] font-mono text-[#64748B]">
+                            Track #{cand.original_track_id ? `A${cand.original_track_id}` : cand.tracklet_id.slice(0, 6)}
+                          </span>
+                          {isReviewed ? (
+                            <span className="flex items-center gap-1 text-[9px] font-mono font-bold text-[#16A34A] bg-[#DCFCE7] px-2 py-0.5 rounded border border-[#86EFAC]">
+                              <Check className="w-2.5 h-2.5" />
+                              REVIEWED
+                            </span>
+                          ) : isUncertain ? (
+                            <span className="text-[9px] font-mono font-bold text-[#0284C7] bg-[#E0F2FE] px-2 py-0.5 rounded border border-[#BAE6FD]">
+                              ● UNCERTAIN
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-mono font-bold text-[#D97706] bg-[#FEF3C7] px-2 py-0.5 rounded border border-[#FDE68A]">
+                              ● UNREVIEWED
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Line 2: Location Name */}
+                        <span className="text-xs text-[#475569] font-medium line-clamp-1">
+                          {cand.location_name || `Node ${cand.camera_id} (${cand.lat.toFixed(4)}, ${cand.lon.toFixed(4)})`}
                         </span>
+
+                        {/* Line 3: Timestamp */}
+                        <span className="text-[10px] font-mono text-[#64748B]">
+                          {new Date(cand.timestamp).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}{" "}
+                          · {new Date(cand.timestamp).toLocaleTimeString("en-GB")}
+                        </span>
+
+                        {/* Line 4: Similarity Meter Bar */}
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-[9px] font-mono font-bold text-[#64748B] tracking-wider uppercase">
+                            SIMILARITY
+                          </span>
+                          <div className="flex-1 h-1 bg-[#E2E8F0] rounded-full overflow-hidden max-w-70">
+                            <div
+                              className="h-full bg-[#D4AF37] rounded-full"
+                              style={{ width: `${similarityScore}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-mono font-bold text-[#64748B]">
+                            {similarityScore}%
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Right Action: Review Evidence Button */}
-                  <div className="shrink-0">
-                    <button
-                      onClick={() => onReviewCandidate(cand)}
-                      className="px-4 py-2 bg-white hover:bg-[#F8FAFC] border border-[#CBD5E1] hover:border-[#94A3B8] rounded text-xs font-mono font-bold text-[#0F172A] tracking-wider transition-all shadow-2xs active:scale-98"
-                    >
-                      REVIEW EVIDENCE
-                    </button>
+                    {/* Right Action: Review Evidence Button */}
+                    <div className="shrink-0">
+                      <button
+                        onClick={() => onReviewCandidate(cand)}
+                        className="px-4 py-2 bg-white hover:bg-[#F8FAFC] border border-[#CBD5E1] hover:border-[#94A3B8] rounded text-xs font-mono font-bold text-[#0F172A] tracking-wider transition-all shadow-2xs active:scale-98"
+                      >
+                        REVIEW EVIDENCE
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Bottom Legal / Forensic AI Disclaimer Bar */}
           <div className="mt-2 bg-[#FEFCE8] border border-[#FEF08A] rounded-md p-3 flex items-start gap-2.5 text-xs text-[#854D0E] font-mono italic leading-relaxed">
